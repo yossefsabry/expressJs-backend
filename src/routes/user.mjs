@@ -34,6 +34,13 @@ userRouter.post("/api/user", body("username")
     .isLength({ min: 3, max: 30 }).withMessage("usernamemust be between 3 and 30 characher")
     .isString().withMessage("username must be string")
     , (request, response) => {
+        request.sessionStore.get(request.session.id, (err, sessions) => {
+            if(err) {
+                console.log(err);
+                throw err;
+            }
+            console.log(sessions);
+        })
         const results = validationResult(request);
         console.log(results.array());
         if (!results.isEmpty()) {

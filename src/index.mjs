@@ -3,6 +3,7 @@ import routers from "./routes/index.mjs";
 import cookieParser from "cookie-parser";
 import session from "express-session";
 import infoUser from "./utils/Const.mjs";
+import { body,  matchedData, validationResult } from "express-validator";
 
 //start the app     
 const app = express();
@@ -32,15 +33,26 @@ app.get("/", (request, response) => {
     response.status(200).send({ msg: "welcome in our plog " })
 })
 
-app.post("/api/auth", (request, response) => {
-    const { body: { username, password } } = request;
+app.post("/api/auth", body("username")
+    .notEmpty().withMessage("the username is empty not valid")
+    .isString({ maxAge: { min: 3, max: 30 } })
+    .withMessage("not valid username its must be between 3 and 30 characther"),
+    body("password").notEmpty().withMessage("the password is empty not valid")
+    , (request, response) => {
+        const resutls = validationResult(request)
+        console.log(resutls);
+        const { body: { username, password } } = request;
 
-    const findUser = infoUser.find((user) => user.username === username && user.password === password);
-    if (!findUser) return response.sendStatus(401).send("error in username or password");
+        if (!resutls.isEmpty()) return response.status(400).send({ erorr: "error in username or password" });
+        const findUser = infoUser.find((user) => user.username === username && user.password === password);
+        if (!findUser) return response.status(401).send("error in username or password");
 
-    request.session.user = findUser;
-    response.status(200).send({ msg: "welcome in our app", findUser });
-})
+        request.session.user = findUser;
+        // restore the data from post request in data
+        const data = matchedData(request);
+        console.log(data)
+        response.status(200).send({ msg: "welcome in our app", findUser });
+    })
 
 app.get("/api/auth/status", (request, response) => {
     if (!request.session.user) return response.status(401).send("you are not login");
